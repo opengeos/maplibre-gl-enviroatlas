@@ -1,35 +1,35 @@
 import { useState, useCallback } from 'react';
-import type { PluginState } from '../core/types';
+import type { EnviroAtlasState, EnviroAtlasTheme } from '../core/types';
 
 /**
- * Default initial state for the plugin
+ * Default initial state for the EnviroAtlas control
  */
-const DEFAULT_STATE: PluginState = {
+const DEFAULT_STATE: EnviroAtlasState = {
   collapsed: true,
-  panelWidth: 300,
+  panelWidth: 360,
+  theme: 'auto',
+  query: '',
+  addedLayers: [],
   data: {},
 };
 
 /**
- * Custom hook for managing plugin state in React applications.
- *
- * This hook provides a simple way to track and update the state
- * of a PluginControl from React components.
+ * Custom hook for tracking EnviroAtlas control state in React apps.
  *
  * @example
  * ```tsx
  * function MyComponent() {
- *   const { state, setCollapsed, setData, reset } = usePluginState();
+ *   const { state, setState, toggle } = useEnviroAtlas({ collapsed: false });
  *
  *   return (
  *     <div>
- *       <button onClick={() => setCollapsed(!state.collapsed)}>
+ *       <button onClick={toggle}>
  *         {state.collapsed ? 'Expand' : 'Collapse'}
  *       </button>
- *       <PluginControlReact
+ *       <EnviroAtlasControlReact
  *         map={map}
  *         collapsed={state.collapsed}
- *         onStateChange={(newState) => setState(newState)}
+ *         onStateChange={setState}
  *       />
  *     </div>
  *   );
@@ -39,8 +39,8 @@ const DEFAULT_STATE: PluginState = {
  * @param initialState - Optional initial state values
  * @returns Object containing state and update functions
  */
-export function usePluginState(initialState?: Partial<PluginState>) {
-  const [state, setState] = useState<PluginState>({
+export function useEnviroAtlas(initialState?: Partial<EnviroAtlasState>) {
+  const [state, setState] = useState<EnviroAtlasState>({
     ...DEFAULT_STATE,
     ...initialState,
   });
@@ -57,6 +57,13 @@ export function usePluginState(initialState?: Partial<PluginState>) {
    */
   const setPanelWidth = useCallback((panelWidth: number) => {
     setState((prev) => ({ ...prev, panelWidth }));
+  }, []);
+
+  /**
+   * Sets the color theme
+   */
+  const setTheme = useCallback((theme: EnviroAtlasTheme) => {
+    setState((prev) => ({ ...prev, theme }));
   }, []);
 
   /**
@@ -85,6 +92,7 @@ export function usePluginState(initialState?: Partial<PluginState>) {
     setState,
     setCollapsed,
     setPanelWidth,
+    setTheme,
     setData,
     reset,
     toggle,

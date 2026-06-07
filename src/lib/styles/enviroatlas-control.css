@@ -1,0 +1,542 @@
+/**
+ * MapLibre GL EnviroAtlas Control Styles
+ *
+ * Theming is driven by CSS custom properties. The light palette is
+ * the default; the dark palette applies automatically through
+ * prefers-color-scheme when the control theme is 'auto', or
+ * explicitly through [data-theme="dark"]. Explicit data-theme
+ * attributes always win over the media query.
+ */
+
+/* Light palette (default) */
+.enviroatlas-control,
+.enviroatlas-panel {
+  --ea-bg: #ffffff;
+  --ea-fg: #1f2a37;
+  --ea-muted: #6b7280;
+  --ea-border: #e0e0e0;
+  --ea-accent: #4a90d9;
+  --ea-accent-fg: #ffffff;
+  --ea-hover: rgba(0, 0, 0, 0.05);
+  --ea-input-bg: #ffffff;
+  --ea-scrollbar: #cccccc;
+  --ea-scrollbar-hover: #aaaaaa;
+  --ea-shadow: rgba(0, 0, 0, 0.1);
+  --ea-error: #c0392b;
+  --ea-notice-bg: #eef5fc;
+}
+
+/* Dark palette via OS preference (theme: 'auto') */
+@media (prefers-color-scheme: dark) {
+  .enviroatlas-control:not([data-theme='light']),
+  .enviroatlas-panel:not([data-theme='light']) {
+    --ea-bg: #1f2937;
+    --ea-fg: #e5e7eb;
+    --ea-muted: #9ca3af;
+    --ea-border: #374151;
+    --ea-accent: #5ba3e8;
+    --ea-accent-fg: #0f1722;
+    --ea-hover: rgba(255, 255, 255, 0.08);
+    --ea-input-bg: #111827;
+    --ea-scrollbar: #4b5563;
+    --ea-scrollbar-hover: #6b7280;
+    --ea-shadow: rgba(0, 0, 0, 0.45);
+    --ea-error: #f1948a;
+    --ea-notice-bg: #1d2c40;
+  }
+}
+
+/* Explicit dark theme (theme: 'dark') overrides the media query */
+.enviroatlas-control[data-theme='dark'],
+.enviroatlas-panel[data-theme='dark'] {
+  --ea-bg: #1f2937;
+  --ea-fg: #e5e7eb;
+  --ea-muted: #9ca3af;
+  --ea-border: #374151;
+  --ea-accent: #5ba3e8;
+  --ea-accent-fg: #0f1722;
+  --ea-hover: rgba(255, 255, 255, 0.08);
+  --ea-input-bg: #111827;
+  --ea-scrollbar: #4b5563;
+  --ea-scrollbar-hover: #6b7280;
+  --ea-shadow: rgba(0, 0, 0, 0.45);
+  --ea-error: #f1948a;
+  --ea-notice-bg: #1d2c40;
+}
+
+/* Container - matches maplibregl-ctrl styling */
+.enviroatlas-control {
+  background: var(--ea-bg);
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px var(--ea-shadow);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Toggle button - 29x29 to match navigation control */
+.enviroatlas-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  width: 29px;
+  height: 29px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: none;
+  color: var(--ea-fg);
+  border-radius: 4px;
+}
+
+.enviroatlas-toggle:hover {
+  background-color: var(--ea-hover);
+}
+
+.enviroatlas-toggle .enviroatlas-icon {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.enviroatlas-toggle .enviroatlas-icon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+  stroke: currentColor;
+  fill: none;
+}
+
+/* Panel - positioned dynamically by JavaScript for floating behavior */
+.enviroatlas-panel {
+  position: absolute;
+  /* Position is set dynamically by _updatePanelPosition() */
+  background: var(--ea-bg);
+  color: var(--ea-fg);
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px var(--ea-shadow);
+  width: min(var(--ea-panel-width, 360px), var(--ea-panel-max-w, calc(100vw - 20px)));
+  min-width: 200px;
+  max-height: var(--ea-panel-max-h, 70vh);
+  overflow: hidden;
+  z-index: 1000;
+  padding: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: none;
+  flex-direction: column;
+}
+
+.enviroatlas-panel.expanded {
+  display: flex;
+}
+
+/* Panel header */
+.enviroatlas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--ea-fg);
+  padding: 4px 0 8px 0;
+  border-bottom: 1px solid var(--ea-border);
+  margin-bottom: 8px;
+  flex: 0 0 auto;
+}
+
+.enviroatlas-title {
+  flex: 1 1 auto;
+  font-size: 13px;
+}
+
+.enviroatlas-close {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--ea-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.enviroatlas-close:hover {
+  color: var(--ea-fg);
+}
+
+/* Search */
+.enviroatlas-search {
+  flex: 0 0 auto;
+  margin-bottom: 8px;
+}
+
+.enviroatlas-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  font-size: 12px;
+  color: var(--ea-fg);
+  background: var(--ea-input-bg);
+  border: 1px solid var(--ea-border);
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.enviroatlas-search-input::placeholder {
+  color: var(--ea-muted);
+}
+
+.enviroatlas-search-input:focus {
+  border-color: var(--ea-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ea-accent) 18%, transparent);
+}
+
+/* Inline notice */
+.enviroatlas-notice {
+  flex: 0 0 auto;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: var(--ea-notice-bg);
+  color: var(--ea-fg);
+  font-size: 11px;
+}
+
+.enviroatlas-notice-error {
+  color: var(--ea-error);
+}
+
+/* Browse region (tree or search results) - scrolls vertically */
+.enviroatlas-browse {
+  flex: 1 1 auto;
+  min-height: 60px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Rows shared by tree, results, and added layers */
+.enviroatlas-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  border-radius: 4px;
+  min-width: 0;
+}
+
+.enviroatlas-row:hover {
+  background: var(--ea-hover);
+}
+
+.enviroatlas-row-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ea-fg);
+  cursor: pointer;
+}
+
+.enviroatlas-leaf {
+  cursor: default;
+}
+
+.enviroatlas-folder-row .enviroatlas-row-name {
+  font-weight: 600;
+}
+
+.enviroatlas-badge {
+  flex: 0 0 auto;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: var(--ea-muted);
+  border: 1px solid var(--ea-border);
+  border-radius: 3px;
+  padding: 0 4px;
+  line-height: 14px;
+}
+
+/* Caret (expand/collapse) and small icon buttons */
+.enviroatlas-caret,
+.enviroatlas-icon-btn,
+.enviroatlas-add-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--ea-muted);
+  cursor: pointer;
+  border-radius: 4px;
+  line-height: 0;
+}
+
+.enviroatlas-caret svg {
+  transition: transform 0.15s ease;
+}
+
+.enviroatlas-caret.expanded svg {
+  transform: rotate(90deg);
+}
+
+.enviroatlas-caret:hover,
+.enviroatlas-icon-btn:hover {
+  color: var(--ea-fg);
+  background: var(--ea-hover);
+}
+
+.enviroatlas-add-btn {
+  color: var(--ea-accent);
+  border: 1px solid var(--ea-border);
+}
+
+.enviroatlas-add-btn:hover {
+  background: var(--ea-accent);
+  color: var(--ea-accent-fg);
+  border-color: var(--ea-accent);
+}
+
+.enviroatlas-legend-btn.active {
+  color: var(--ea-accent);
+}
+
+/* Tree nesting */
+.enviroatlas-services {
+  margin-left: 14px;
+}
+
+.enviroatlas-sublayers {
+  margin-left: 18px;
+}
+
+/* Search results */
+.enviroatlas-result-row {
+  align-items: flex-start;
+  padding: 5px 4px;
+}
+
+.enviroatlas-result-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.enviroatlas-result-text .enviroatlas-row-name {
+  cursor: default;
+  display: block;
+}
+
+.enviroatlas-breadcrumb {
+  color: var(--ea-muted);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Status / placeholder rows */
+.enviroatlas-status {
+  margin: 4px 0;
+  padding: 4px;
+  color: var(--ea-muted);
+  font-size: 11px;
+}
+
+.enviroatlas-status-error {
+  color: var(--ea-error);
+  cursor: pointer;
+}
+
+/* Added layers section */
+.enviroatlas-added-slot {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.enviroatlas-added {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--ea-border);
+  margin-top: 8px;
+  padding-top: 6px;
+}
+
+.enviroatlas-section-title {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--ea-fg);
+  margin-bottom: 4px;
+}
+
+.enviroatlas-added-list {
+  overflow-y: auto;
+  max-height: 180px;
+}
+
+.enviroatlas-added-item {
+  border-bottom: 1px solid var(--ea-border);
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+
+.enviroatlas-added-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.enviroatlas-visibility {
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: var(--ea-accent);
+  cursor: pointer;
+}
+
+.enviroatlas-added-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 2px 24px;
+}
+
+.enviroatlas-opacity-label {
+  flex: 0 0 auto;
+  color: var(--ea-muted);
+  font-size: 10px;
+}
+
+.enviroatlas-opacity {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 4px;
+  accent-color: var(--ea-accent);
+  cursor: pointer;
+}
+
+.enviroatlas-opacity-value {
+  flex: 0 0 auto;
+  width: 32px;
+  text-align: right;
+  color: var(--ea-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Legend */
+.enviroatlas-legend {
+  padding: 2px 4px 4px 24px;
+}
+
+.enviroatlas-legend-layer {
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--ea-fg);
+  margin: 4px 0 2px;
+}
+
+.enviroatlas-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 0;
+}
+
+.enviroatlas-legend-swatch {
+  flex: 0 0 auto;
+  border-radius: 2px;
+}
+
+.enviroatlas-legend-label {
+  color: var(--ea-fg);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Scrollbar styling */
+.enviroatlas-browse,
+.enviroatlas-added-list,
+.enviroatlas-panel {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ea-scrollbar) transparent;
+}
+
+.enviroatlas-browse::-webkit-scrollbar,
+.enviroatlas-added-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.enviroatlas-browse::-webkit-scrollbar-track,
+.enviroatlas-added-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.enviroatlas-browse::-webkit-scrollbar-thumb,
+.enviroatlas-added-list::-webkit-scrollbar-thumb {
+  background: var(--ea-scrollbar);
+  border-radius: 3px;
+}
+
+.enviroatlas-browse::-webkit-scrollbar-thumb:hover,
+.enviroatlas-added-list::-webkit-scrollbar-thumb:hover {
+  background: var(--ea-scrollbar-hover);
+}
+
+/* Form elements kept for custom panel content */
+.enviroatlas-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ea-accent-fg);
+  background: var(--ea-accent);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.enviroatlas-button:hover {
+  filter: brightness(0.92);
+}
+
+.enviroatlas-button:disabled {
+  background: var(--ea-border);
+  cursor: not-allowed;
+}
+
+.enviroatlas-divider {
+  height: 1px;
+  background: var(--ea-border);
+  margin: 12px 0;
+}
+
+/* Small screens: tighten padding so more content fits */
+@media (max-width: 480px) {
+  .enviroatlas-panel {
+    font-size: 11px;
+    padding: 6px;
+  }
+}

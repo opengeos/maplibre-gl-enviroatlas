@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import maplibregl, { Map } from 'maplibre-gl';
-import { PluginControlReact, usePluginState } from '../../src/react';
+import { EnviroAtlasControlReact, useEnviroAtlas } from '../../src/react';
+import type { AddedLayer, EnviroAtlasTheme } from '../../src/react';
 import '../../src/index.css';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -11,7 +12,9 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 function App() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<Map | null>(null);
-  const { state, toggle } = usePluginState({ collapsed: false });
+  const [theme, setTheme] = useState<EnviroAtlasTheme>('auto');
+  const [layerCount, setLayerCount] = useState(0);
+  const { state, setState, toggle } = useEnviroAtlas({ collapsed: false });
 
   // Initialize the map
   useEffect(() => {
@@ -20,8 +23,8 @@ function App() {
     const mapInstance = new maplibregl.Map({
       container: mapContainer.current,
       style: 'https://demotiles.maplibre.org/style.json',
-      center: [0, 0],
-      zoom: 2,
+      center: [-96, 38.5],
+      zoom: 3.5,
     });
 
     // Add navigation controls to top-right
@@ -39,42 +42,63 @@ function App() {
     };
   }, []);
 
-  const handleStateChange = (newState: typeof state) => {
-    console.log('Plugin state changed:', newState);
+  const handleLayerAdd = (layer: AddedLayer) => {
+    console.log('Layer added:', layer.label);
+    setLayerCount((count) => count + 1);
+  };
+
+  const handleLayerRemove = (layer: AddedLayer) => {
+    console.log('Layer removed:', layer.label);
+    setLayerCount((count) => Math.max(0, count - 1));
+  };
+
+  const buttonStyle: React.CSSProperties = {
+    padding: '8px 12px',
+    background: '#4a90d9',
+    color: 'white',
+    border: 'none',
+    borderRadius: 4,
+    cursor: 'pointer',
+    fontWeight: 500,
   };
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />
 
-      {/* External toggle button */}
-      <button
-        onClick={toggle}
-        style={{
-          position: 'absolute',
-          top: 10,
-          left: 10,
-          zIndex: 1,
-          padding: '8px 16px',
-          background: '#4a90d9',
-          color: 'white',
-          border: 'none',
-          borderRadius: 4,
-          cursor: 'pointer',
-          fontWeight: 500,
-        }}
-      >
-        {state.collapsed ? 'Expand' : 'Collapse'} Panel
-      </button>
+      {/* External controls using the hook */}
+      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 1, display: 'flex', gap: 8 }}>
+        <button onClick={toggle} style={buttonStyle}>
+          {state.collapsed ? 'Expand' : 'Collapse'} Panel
+        </button>
+        <button
+          onClick={() => setTheme((t) => (t === 'dark' ? 'light' : t === 'light' ? 'auto' : 'dark'))}
+          style={buttonStyle}
+        >
+          Theme: {theme}
+        </button>
+        <span
+          style={{
+            ...buttonStyle,
+            background: 'rgba(0, 0, 0, 0.6)',
+            cursor: 'default',
+          }}
+        >
+          {layerCount} layer{layerCount === 1 ? '' : 's'} added
+        </span>
+      </div>
 
-      {/* Plugin control */}
+      {/* EnviroAtlas control */}
       {map && (
-        <PluginControlReact
+        <EnviroAtlasControlReact
           map={map}
-          title="React Plugin"
           collapsed={state.collapsed}
-          panelWidth={320}
-          onStateChange={handleStateChange}
+          panelWidth={360}
+          theme={theme}
+          onStateChange={setState}
+          onLayerAdd={handleLayerAdd}
+          onLayerRemove={handleLayerRemove}
+          onError={(error) => console.warn('EnviroAtlas error:', error.message)}
         />
       )}
     </div>
