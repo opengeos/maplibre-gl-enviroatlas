@@ -32,3 +32,6 @@ export {
 export type { CatalogClientOptions } from './catalog';
 
 export { filterCatalog } from './search';
+
+export { extentToBounds, resolveProjection } from './extent';
+export type { ArcGISExtent, LngLatBoundsArray } from './extent';

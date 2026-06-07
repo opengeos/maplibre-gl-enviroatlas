@@ -64,8 +64,11 @@
   --ea-notice-bg: #1d2c40;
 }
 
-/* Container - matches maplibregl-ctrl styling */
-.enviroatlas-control {
+/* Container - matches maplibregl-ctrl styling. The doubled class bumps
+   specificity above maplibre-gl.css's .maplibregl-ctrl-group background
+   regardless of stylesheet import order, so the button follows the
+   theme palette in dark mode. */
+.enviroatlas-control.enviroatlas-control {
   background: var(--ea-bg);
   border-radius: 4px;
   box-shadow: 0 0 0 2px var(--ea-shadow);

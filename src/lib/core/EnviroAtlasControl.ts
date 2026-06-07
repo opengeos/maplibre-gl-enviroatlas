@@ -1,5 +1,6 @@
 import type { IControl, Map as MapLibreMap } from 'maplibre-gl';
 import { CatalogClient, DEFAULT_EXCLUDED_FOLDERS } from '../api/catalog';
+import { extentToBounds } from '../api/extent';
 import { filterCatalog } from '../api/search';
 import type { ServiceMetadata, ServiceRef } from '../api/types';
 import { DEFAULT_SERVICES_URL } from '../api/urls';
@@ -33,6 +34,8 @@ const DEFAULT_OPTIONS: Required<EnviroAtlasControlOptions> = {
   imageFormat: 'png32',
   attribution: 'U.S. EPA EnviroAtlas',
   searchDebounceMs: 250,
+  fitBoundsOnAdd: true,
+  quietTileErrors: true,
 };
 
 /**
@@ -87,6 +90,7 @@ export class EnviroAtlasControl implements IControl {
   private _mapResizeHandler: (() => void) | null = null;
   private _clickOutsideHandler: ((e: MouseEvent) => void) | null = null;
   private _clickCaptureHandler: ((e: MouseEvent) => void) | null = null;
+  private _mapErrorHandler: ((e: { error?: Error }) => void) | null = null;
   /** Whether the panel was expanded when the current click dispatch began */
   private _expandedAtClickStart = false;
 
@@ -168,6 +172,10 @@ export class EnviroAtlasControl implements IControl {
     if (this._mapResizeHandler && this._map) {
       this._map.off('resize', this._mapResizeHandler);
       this._mapResizeHandler = null;
+    }
+    if (this._mapErrorHandler && this._map) {
+      this._map.off('error', this._mapErrorHandler);
+      this._mapErrorHandler = null;
     }
     if (this._clickOutsideHandler) {
       document.removeEventListener('click', this._clickOutsideHandler);
@@ -281,12 +289,16 @@ export class EnviroAtlasControl implements IControl {
   /**
    * Adds a service (or a single MapServer sublayer) to the map.
    *
+   * The service extent is fetched (and cached) to limit tile requests
+   * to the data area and, unless `fitBoundsOnAdd` is disabled, to zoom
+   * the map to the added layer.
+   *
    * @param service - The service to add
    * @param sublayerId - Optional MapServer sublayer id
    * @param label - Optional display label (defaults to the service name)
    * @returns The added layer entry, or the existing entry when already added
    */
-  addServiceLayer(service: ServiceRef, sublayerId?: number, label?: string): AddedLayer | undefined {
+  async addServiceLayer(service: ServiceRef, sublayerId?: number, label?: string): Promise<AddedLayer | undefined> {
     if (!this._layerManager) return undefined;
 
     const existing = this._layerManager.findLayer(service, sublayerId);
@@ -295,18 +307,37 @@ export class EnviroAtlasControl implements IControl {
       return existing;
     }
 
+    // Resolve the service extent (cached); ignore failures and add
+    // the layer without bounds.
+    const bounds = await this._catalog
+      ?.getServiceMetadata(service)
+      .then((metadata) => {
+        this._metadataCache.set(service.fullName, metadata);
+        return extentToBounds(metadata.extent);
+      })
+      .catch(() => null);
+    // The control may have been removed or the layer added while the
+    // metadata request was in flight.
+    if (!this._layerManager) return undefined;
+    const raced = this._layerManager.findLayer(service, sublayerId);
+    if (raced) return raced;
+
     try {
       const entry = this._layerManager.addLayer(
         service,
         label ?? service.name,
         sublayerId,
-        clamp(this._options.defaultOpacity, 0, 1)
+        clamp(this._options.defaultOpacity, 0, 1),
+        bounds ?? undefined
       );
       this._state.addedLayers = this._layerManager.getLayers();
       this._addedView?.update(this._state.addedLayers);
       this._showNotice(`Added "${entry.label}"`);
       this._emit('layeradd', { layer: entry });
       this._emit('statechange');
+      if (this._options.fitBoundsOnAdd && entry.bounds && this._map) {
+        this._map.fitBounds(entry.bounds, { padding: 40 });
+      }
       return entry;
     } catch (error) {
       this._handleError(error instanceof Error ? error : new Error(String(error)));
@@ -640,6 +671,10 @@ export class EnviroAtlasControl implements IControl {
 
     this._clickOutsideHandler = (e: MouseEvent) => {
       const target = e.target as Node;
+      // A target detached mid-dispatch (e.g. a remove button whose row was
+      // re-rendered by its own click handler) cannot be classified as
+      // outside the panel; ignore it.
+      if (!target.isConnected) return;
       if (
         this._expandedAtClickStart &&
         this._container &&
@@ -667,6 +702,22 @@ export class EnviroAtlasControl implements IControl {
       }
     };
     this._map?.on('resize', this._mapResizeHandler);
+
+    // The EnviroAtlas server intermittently fails tile requests (504s
+    // or responses without CORS headers); keep those out of the console
+    // while preserving MapLibre's default logging for other errors.
+    if (this._options.quietTileErrors) {
+      this._mapErrorHandler = (e) => {
+        const url = (e?.error as { url?: unknown } | undefined)?.url;
+        if (typeof url === 'string' && url.startsWith(this._options.servicesUrl)) {
+          this._emit('error', { error: e.error });
+          return;
+        }
+        // Mimic MapLibre's default behavior for unrelated errors
+        console.error(e?.error);
+      };
+      this._map?.on('error', this._mapErrorHandler);
+    }
   }
 
   /**

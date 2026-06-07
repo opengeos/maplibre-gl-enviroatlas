@@ -6,7 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 // Create map centered on the contiguous United States
 const map = new maplibregl.Map({
   container: 'map',
-  style: 'https://demotiles.maplibre.org/style.json',
+  style: 'https://tiles.openfreemap.org/styles/positron',
   center: [-96, 38.5],
   zoom: 3.5,
 });

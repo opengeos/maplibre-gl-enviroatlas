@@ -5,6 +5,7 @@
  * per-service layer metadata, and legends. All responses are cached
  * in memory for the lifetime of the client.
  */
+import type { ArcGISExtent } from './extent';
 import type { LayerLegend, ServiceLayer, ServiceMetadata, ServiceRef, ServiceType } from './types';
 import { buildCatalogUrl, buildFolderUrl, buildLegendUrl, buildServiceUrl, DEFAULT_SERVICES_URL } from './urls';
 
@@ -66,7 +67,13 @@ export function parseServiceList(json: unknown, folder: string): ServiceRef[] {
  * @returns Parsed metadata with a normalized layer list
  */
 export function parseServiceMetadata(json: unknown): ServiceMetadata {
-  const raw = (json ?? {}) as { mapName?: unknown; description?: unknown; layers?: unknown };
+  const raw = (json ?? {}) as {
+    mapName?: unknown;
+    description?: unknown;
+    layers?: unknown;
+    fullExtent?: unknown;
+    extent?: unknown;
+  };
   const layers: ServiceLayer[] = [];
   if (Array.isArray(raw.layers)) {
     for (const entry of raw.layers) {
@@ -80,10 +87,20 @@ export function parseServiceMetadata(json: unknown): ServiceMetadata {
       });
     }
   }
+  // MapServers report fullExtent; ImageServers report extent
+  const rawExtent = (raw.fullExtent ?? raw.extent) as ArcGISExtent | undefined;
+  const extent =
+    rawExtent &&
+    typeof rawExtent === 'object' &&
+    [rawExtent.xmin, rawExtent.ymin, rawExtent.xmax, rawExtent.ymax].every((v) => typeof v === 'number')
+      ? rawExtent
+      : undefined;
+
   return {
     mapName: typeof raw.mapName === 'string' ? raw.mapName : undefined,
     description: typeof raw.description === 'string' ? raw.description : undefined,
     layers,
+    extent,
   };
 }
 

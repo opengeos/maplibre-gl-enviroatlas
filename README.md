@@ -11,6 +11,8 @@ A MapLibre GL JS plugin for searching and adding [EPA EnviroAtlas web services](
 - **Deep Search** - Search both service names and individual sublayer names (e.g. "tree cover", "asthma")
 - **Layer Management** - Visibility toggle, opacity slider, legend display, and removal for each added layer
 - **MapServer and ImageServer** - Adds dynamic ArcGIS services as MapLibre raster layers, reprojected to Web Mercator on the fly
+- **Auto Zoom** - Zooms the map to each added layer's extent (disable with `fitBoundsOnAdd: false`)
+- **Extent-aware Tiles** - Tile requests are limited to each service's data extent, avoiding slow out-of-extent server errors
 - **Dark and Light Mode** - Follows the OS preference by default, with explicit `light`/`dark`/`auto` themes
 - **Small Screen Friendly** - The panel caps its size to the map and scrolls vertically
 - **TypeScript Support** - Full TypeScript support with exported type definitions
@@ -35,7 +37,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 const map = new maplibregl.Map({
   container: 'map',
-  style: 'https://demotiles.maplibre.org/style.json',
+  style: 'https://tiles.openfreemap.org/styles/positron',
   center: [-96, 38.5],
   zoom: 4,
 });
@@ -102,12 +104,14 @@ Implements MapLibre's `IControl`. The control renders as a 29x29 toggle button t
 | `imageFormat` | `string` | `'png32'` | ArcGIS export image format |
 | `attribution` | `string` | `'U.S. EPA EnviroAtlas'` | Attribution for added raster sources |
 | `searchDebounceMs` | `number` | `250` | Debounce delay for the search input |
+| `fitBoundsOnAdd` | `boolean` | `true` | Zoom the map to a layer's extent when it is added |
+| `quietTileErrors` | `boolean` | `true` | Keep transient EnviroAtlas tile failures out of the console (surfaced via the `error` event instead) |
 
 #### Methods
 
 | Method | Description |
 | --- | --- |
-| `addServiceLayer(service, sublayerId?, label?)` | Adds a service or single MapServer sublayer to the map |
+| `addServiceLayer(service, sublayerId?, label?)` | Adds a service or single MapServer sublayer to the map (async; resolves with the added layer) |
 | `removeLayer(id)` | Removes a layer added through the control |
 | `setLayerOpacity(id, opacity)` | Sets the raster opacity of an added layer |
 | `setLayerVisibility(id, visible)` | Shows or hides an added layer |

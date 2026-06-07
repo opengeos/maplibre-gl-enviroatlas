@@ -1,4 +1,5 @@
-import type { Map as MapLibreMap } from 'maplibre-gl';
+import type { Map as MapLibreMap, RasterSourceSpecification } from 'maplibre-gl';
+import type { LngLatBoundsArray } from '../api/extent';
 import type { ServiceRef } from '../api/types';
 import { buildTileTemplate } from '../api/urls';
 import { generateId } from '../utils/helpers';
@@ -64,9 +65,16 @@ export class MapLayerManager {
    * @param label - Display label for the added layer
    * @param sublayerId - Optional MapServer sublayer id
    * @param opacity - Initial raster opacity (0 to 1)
+   * @param bounds - Optional geographic bounds limiting tile requests
    * @returns The created added-layer entry
    */
-  addLayer(service: ServiceRef, label: string, sublayerId?: number, opacity = 1): AddedLayer {
+  addLayer(
+    service: ServiceRef,
+    label: string,
+    sublayerId?: number,
+    opacity = 1,
+    bounds?: LngLatBoundsArray
+  ): AddedLayer {
     const id = generateId('enviroatlas');
     const entry: AddedLayer = {
       id,
@@ -77,6 +85,7 @@ export class MapLayerManager {
       label,
       visible: true,
       opacity,
+      bounds,
     };
 
     const tileTemplate = buildTileTemplate(
@@ -86,12 +95,16 @@ export class MapLayerManager {
       this._options.servicesUrl
     );
 
-    this._map.addSource(entry.sourceId, {
+    const source: RasterSourceSpecification = {
       type: 'raster',
       tiles: [tileTemplate],
       tileSize: this._options.tileSize,
       attribution: this._options.attribution,
-    });
+    };
+    // Bounds keep MapLibre from requesting tiles far outside the data
+    // extent, which the EnviroAtlas server answers with slow 504s.
+    if (bounds) source.bounds = bounds;
+    this._map.addSource(entry.sourceId, source);
     this._map.addLayer({
       id: entry.layerId,
       type: 'raster',

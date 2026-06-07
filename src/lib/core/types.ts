@@ -1,4 +1,5 @@
 import type { Map } from 'maplibre-gl';
+import type { LngLatBoundsArray } from '../api/extent';
 import type { ServiceRef } from '../api/types';
 
 /**
@@ -89,6 +90,23 @@ export interface EnviroAtlasControlOptions {
    * @default 250
    */
   searchDebounceMs?: number;
+
+  /**
+   * Whether to zoom the map to a layer's extent when it is added
+   * @default true
+   */
+  fitBoundsOnAdd?: boolean;
+
+  /**
+   * Whether to keep transient EnviroAtlas tile failures out of the
+   * console. The EPA server occasionally answers tile requests
+   * without CORS headers or with gateway timeouts; with this enabled
+   * the control handles the map's error events for EnviroAtlas URLs
+   * (emitting its own 'error' event instead) and logs all other map
+   * errors as MapLibre would by default.
+   * @default true
+   */
+  quietTileErrors?: boolean;
 }
 
 /**
@@ -111,6 +129,8 @@ export interface AddedLayer {
   visible: boolean;
   /** Current raster opacity (0 to 1) */
   opacity: number;
+  /** Geographic bounds of the service data, when known */
+  bounds?: LngLatBoundsArray;
 }
 
 /**

@@ -3,6 +3,7 @@
  *
  * @see https://www.epa.gov/enviroatlas/enviroatlas-web-services
  */
+import type { ArcGISExtent } from './extent';
 
 /**
  * The kind of ArcGIS service exposed by the EnviroAtlas server.
@@ -38,7 +39,8 @@ export interface ServiceLayer {
 }
 
 /**
- * Metadata for a MapServer service (subset of the ArcGIS JSON response).
+ * Metadata for a MapServer or ImageServer service (subset of the
+ * ArcGIS JSON response).
  */
 export interface ServiceMetadata {
   /** Display name reported by the server */
@@ -47,6 +49,8 @@ export interface ServiceMetadata {
   description?: string;
   /** Flat list of layers (empty for ImageServers) */
   layers: ServiceLayer[];
+  /** Service extent (fullExtent for MapServers, extent for ImageServers) */
+  extent?: ArcGISExtent;
 }
 
 /**
