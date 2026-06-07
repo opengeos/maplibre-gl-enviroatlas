@@ -373,4 +373,115 @@ describe('EnviroAtlasControl', () => {
     control.onRemove();
     expect(mapContainer.querySelector('.enviroatlas-panel')).toBeNull();
   });
+
+  const RESTORE_ENTRY = {
+    id: 'enviroatlas-restored',
+    sourceId: 'enviroatlas-restored',
+    layerId: 'enviroatlas-restored',
+    service: { folder: 'Supplemental', name: 'PADUS', fullName: 'Supplemental/PADUS', type: 'MapServer' as const },
+    sublayerId: 0,
+    label: 'PADUS 2.0',
+    visible: false,
+    opacity: 0.5,
+    bounds: [-130, 20, -60, 55] as [number, number, number, number],
+  };
+
+  it('reuses existing native source/layer when restoring and reconciles opacity/visibility', () => {
+    const { control } = mount({ collapsed: false });
+    const map = control.getMap()!;
+    // Host already recreated the natives before activating the control.
+    (map.getSource as ReturnType<typeof vi.fn>).mockImplementation((id: string) =>
+      id === RESTORE_ENTRY.sourceId ? { type: 'image' } : undefined
+    );
+    (map.getLayer as ReturnType<typeof vi.fn>).mockImplementation((id: string) =>
+      id === RESTORE_ENTRY.layerId ? { id } : undefined
+    );
+
+    control.restoreLayers([{ ...RESTORE_ENTRY }]);
+
+    // No duplicate natives created
+    expect(map.addSource).not.toHaveBeenCalled();
+    expect(map.addLayer).not.toHaveBeenCalled();
+    // Opacity and visibility applied to the existing native layer
+    expect(map.setPaintProperty).toHaveBeenCalledWith(RESTORE_ENTRY.layerId, 'raster-opacity', 0.5);
+    expect(map.setLayoutProperty).toHaveBeenCalledWith(RESTORE_ENTRY.layerId, 'visibility', 'none');
+
+    const layers = control.getState().addedLayers;
+    expect(layers).toHaveLength(1);
+    expect(layers[0].id).toBe(RESTORE_ENTRY.id);
+    expect(layers[0].opacity).toBe(0.5);
+    expect(layers[0].visible).toBe(false);
+    control.onRemove();
+  });
+
+  it('creates native source/layer when missing on restore (tiles mode)', () => {
+    const { control } = mount({ collapsed: false, renderMode: 'tiles' });
+    const map = control.getMap()!;
+    // Natives do not exist yet (default getSource/getLayer return undefined).
+
+    control.restoreLayers([{ ...RESTORE_ENTRY }]);
+
+    const sourceSpec = (map.addSource as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(sourceSpec.type).toBe('raster');
+    expect(sourceSpec.tiles[0]).toContain('{bbox-epsg-3857}');
+    expect(sourceSpec.bounds).toEqual(RESTORE_ENTRY.bounds);
+
+    const addLayerSpec = (map.addLayer as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(addLayerSpec.id).toBe(RESTORE_ENTRY.layerId);
+    expect(addLayerSpec.paint['raster-opacity']).toBe(0.5);
+    expect(addLayerSpec.layout.visibility).toBe('none');
+    control.onRemove();
+  });
+
+  it('restoreLayers skips duplicates and emits layeradd + statechange', () => {
+    const { control } = mount({ collapsed: false });
+    const map = control.getMap()!;
+    (map.getSource as ReturnType<typeof vi.fn>).mockReturnValue({ type: 'image' });
+    (map.getLayer as ReturnType<typeof vi.fn>).mockImplementation((id: string) =>
+      id === RESTORE_ENTRY.layerId ? { id } : undefined
+    );
+
+    const added: unknown[] = [];
+    let stateChanges = 0;
+    control.on('layeradd', (e) => added.push(e.layer));
+    control.on('statechange', () => stateChanges++);
+
+    // Same entry twice: the second is a duplicate by service+sublayer.
+    control.restoreLayers([{ ...RESTORE_ENTRY }, { ...RESTORE_ENTRY, id: 'enviroatlas-other' }]);
+
+    expect(added).toHaveLength(1);
+    // A single statechange for the whole batch
+    expect(stateChanges).toBe(1);
+    expect(control.getState().addedLayers).toHaveLength(1);
+    control.onRemove();
+  });
+
+  it('does not emit when restoreLayers restores nothing', () => {
+    const { control } = mount({ collapsed: false });
+    let stateChanges = 0;
+    control.on('statechange', () => stateChanges++);
+    control.restoreLayers([]);
+    expect(stateChanges).toBe(0);
+    control.onRemove();
+  });
+
+  it('defers restoreLayers called before onAdd and applies it after the control is added', () => {
+    const { map, controlCorner } = createFakeMap();
+    (map.getSource as ReturnType<typeof vi.fn>).mockReturnValue({ type: 'image' });
+    (map.getLayer as ReturnType<typeof vi.fn>).mockImplementation((id: string) =>
+      id === RESTORE_ENTRY.layerId ? { id } : undefined
+    );
+
+    const control = new EnviroAtlasControl({ collapsed: false });
+    // Called before the control is on a map: should defer, not throw.
+    control.restoreLayers([{ ...RESTORE_ENTRY }]);
+    expect(control.getState().addedLayers).toHaveLength(0);
+
+    const container = control.onAdd(map);
+    controlCorner.appendChild(container);
+
+    expect(control.getState().addedLayers).toHaveLength(1);
+    expect(control.getState().addedLayers[0].id).toBe(RESTORE_ENTRY.id);
+    control.onRemove();
+  });
 });

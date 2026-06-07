@@ -117,6 +117,7 @@ Implements MapLibre's `IControl`. The control renders as a 29x29 toggle button t
 | Method | Description |
 | --- | --- |
 | `addServiceLayer(service, sublayerId?, label?)` | Adds a service or single MapServer sublayer to the map (async; resolves with the added layer) |
+| `restoreLayers(entries)` | Re-registers host-persisted `AddedLayer` entries, reusing native sources/layers the host already recreated (no fitBounds, no notices). Deferred until `onAdd` when the control is not yet on a map |
 | `removeLayer(id)` | Removes a layer added through the control |
 | `setLayerOpacity(id, opacity)` | Sets the raster opacity of an added layer |
 | `setLayerVisibility(id, visible)` | Shows or hides an added layer |
