@@ -32,6 +32,10 @@ export interface PanelView {
   browse: HTMLElement;
   /** Container for the added layers section */
   addedSlot: HTMLElement;
+  /** Drag handle for resizing the panel width */
+  resizer: HTMLElement;
+  /** "Insert before" layer select */
+  beforeSelect: HTMLSelectElement;
 }
 
 /**
@@ -66,9 +70,24 @@ export function createPanelView(options: PanelViewOptions): PanelView {
   const notice = el('div', 'enviroatlas-notice');
   notice.hidden = true;
 
+  // "Insert before" select: where newly added layers go in the layer
+  // stack (e.g. below a label layer). Populated from the map style.
+  const beforeRow = el('div', 'enviroatlas-before-row');
+  const beforeLabel = el('span', 'enviroatlas-before-label', 'Insert before');
+  const beforeSelect = el('select', 'enviroatlas-before-select');
+  beforeSelect.setAttribute('aria-label', 'Insert added layers before this map layer');
+  beforeRow.append(beforeLabel, beforeSelect);
+
   const browse = el('div', 'enviroatlas-browse');
   const addedSlot = el('div', 'enviroatlas-added-slot');
 
-  panel.append(header, searchWrap, notice, browse, addedSlot);
-  return { panel, searchInput, notice, browse, addedSlot };
+  // Drag handle for resizing the panel width; which edge it sits on
+  // depends on the control corner and is set via a panel class.
+  const resizer = el('div', 'enviroatlas-resizer');
+  resizer.setAttribute('role', 'separator');
+  resizer.setAttribute('aria-orientation', 'vertical');
+  resizer.setAttribute('aria-label', 'Resize panel');
+
+  panel.append(header, searchWrap, beforeRow, notice, browse, addedSlot, resizer);
+  return { panel, searchInput, notice, browse, addedSlot, resizer, beforeSelect };
 }

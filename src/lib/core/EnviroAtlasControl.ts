@@ -40,6 +40,9 @@ const DEFAULT_OPTIONS: Required<EnviroAtlasControlOptions> = {
   quietTileErrors: true,
 };
 
+/** Minimum panel width in pixels when resizing */
+const MIN_PANEL_WIDTH = 240;
+
 /**
  * Event handlers map type
  */
@@ -95,6 +98,8 @@ export class EnviroAtlasControl implements IControl {
   private _mapErrorHandler: ((e: { error?: Error }) => void) | null = null;
   /** Whether the panel was expanded when the current click dispatch began */
   private _expandedAtClickStart = false;
+  /** Suppresses the click fired when a resize drag ends outside the panel */
+  private _suppressNextClickOutside = false;
 
   /**
    * Creates a new EnviroAtlasControl instance.
@@ -154,6 +159,7 @@ export class EnviroAtlasControl implements IControl {
     if (!this._state.collapsed) {
       this._panel.classList.add('expanded');
       this._treeView?.load();
+      this._refreshBeforeSelect();
       // Update position after control is added to DOM
       requestAnimationFrame(() => {
         this._updatePanelPosition();
@@ -253,6 +259,7 @@ export class EnviroAtlasControl implements IControl {
       } else {
         this._panel.classList.add('expanded');
         this._treeView?.load();
+        this._refreshBeforeSelect();
         this._updatePanelPosition();
         this._emit('expand');
       }
@@ -277,6 +284,21 @@ export class EnviroAtlasControl implements IControl {
     if (!this._state.collapsed) {
       this.toggle();
     }
+  }
+
+  /**
+   * Sets the panel width in pixels (clamped to the map width).
+   *
+   * @param width - The new panel width
+   */
+  setPanelWidth(width: number): void {
+    // clientWidth can be 0 before layout (e.g. detached containers)
+    const mapWidth = this._mapContainer?.clientWidth || 0;
+    const maxWidth = mapWidth > 0 ? Math.max(MIN_PANEL_WIDTH, mapWidth - 20) : Number.POSITIVE_INFINITY;
+    const clamped = Math.round(clamp(width, MIN_PANEL_WIDTH, maxWidth));
+    this._state.panelWidth = clamped;
+    this._panel?.style.setProperty('--ea-panel-width', `${clamped}px`);
+    this._emit('statechange');
   }
 
   /**
@@ -656,7 +678,89 @@ export class EnviroAtlasControl implements IControl {
     });
     panelView.addedSlot.appendChild(this._addedView.el);
 
+    panelView.beforeSelect.addEventListener('change', () => {
+      const value = panelView.beforeSelect.value || undefined;
+      this._options = { ...this._options, beforeId: value ?? '' };
+      this._layerManager?.setBeforeId(value);
+    });
+
+    this._setupResize(panelView);
+
     return panelView.panel;
+  }
+
+  /**
+   * Populates the "Insert before" select with the map's current style
+   * layers, keeping the active selection when still present.
+   */
+  private _refreshBeforeSelect(): void {
+    const select = this._panelView?.beforeSelect;
+    if (!select || !this._map) return;
+
+    let layers: Array<{ id: string }>;
+    try {
+      layers = this._map.getStyle()?.layers ?? [];
+    } catch {
+      layers = [];
+    }
+
+    const current = this._options.beforeId;
+    select.replaceChildren();
+    const top = document.createElement('option');
+    top.value = '';
+    top.textContent = 'Top of map';
+    select.append(top);
+    for (const layer of layers) {
+      // Skip layers added by this control
+      if (layer.id.startsWith('enviroatlas-')) continue;
+      const option = document.createElement('option');
+      option.value = layer.id;
+      option.textContent = layer.id;
+      select.append(option);
+    }
+    select.value = current && layers.some((layer) => layer.id === current) ? current : '';
+  }
+
+  /**
+   * Wires the resize handle: dragging it horizontally adjusts the
+   * panel width. The growth direction follows the panel anchor (a
+   * left-anchored panel grows rightward, a right-anchored panel grows
+   * leftward), so resizing works in every control corner.
+   *
+   * @param panelView - The panel view holding the resizer element
+   */
+  private _setupResize(panelView: PanelView): void {
+    const { resizer, panel } = panelView;
+
+    resizer.addEventListener('pointerdown', (down: PointerEvent) => {
+      down.preventDefault();
+      const startX = down.clientX;
+      const startWidth = panel.getBoundingClientRect().width;
+      // A right-anchored panel (resizer on its left edge) grows as the
+      // pointer moves left; a left-anchored one as it moves right.
+      const rightAnchored = panel.classList.contains('enviroatlas-resize-left');
+      panel.classList.add('enviroatlas-resizing');
+
+      const onMove = (move: PointerEvent) => {
+        const delta = move.clientX - startX;
+        this.setPanelWidth(startWidth + (rightAnchored ? -delta : delta));
+      };
+      const onUp = () => {
+        panel.classList.remove('enviroatlas-resizing');
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('pointercancel', onUp);
+        // The click that follows this pointerup may land outside the
+        // panel; swallow it so the panel does not collapse.
+        this._suppressNextClickOutside = true;
+        setTimeout(() => {
+          this._suppressNextClickOutside = false;
+        }, 0);
+      };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onUp);
+    });
   }
 
   /**
@@ -674,6 +778,9 @@ export class EnviroAtlasControl implements IControl {
     document.addEventListener('click', this._clickCaptureHandler, true);
 
     this._clickOutsideHandler = (e: MouseEvent) => {
+      // Releasing a resize drag outside the panel fires a click whose
+      // target is outside; that is not an intent to close.
+      if (this._suppressNextClickOutside) return;
       const target = e.target as Node;
       // A target detached mid-dispatch (e.g. a remove button whose row was
       // re-rendered by its own click handler) cannot be classified as
@@ -757,6 +864,10 @@ export class EnviroAtlasControl implements IControl {
     const buttonRect = button.getBoundingClientRect();
     const mapRect = this._mapContainer.getBoundingClientRect();
     const position = this._getControlPosition();
+
+    // Put the resize handle on the panel's free edge: right-anchored
+    // panels (top/bottom-right) resize from their left edge.
+    this._panel.classList.toggle('enviroatlas-resize-left', position.endsWith('right'));
 
     // Calculate button position relative to map container
     const buttonTop = buttonRect.top - mapRect.top;

@@ -31,6 +31,8 @@ function createFakeMap(): { map: MapLibreMap; mapContainer: HTMLElement; control
       getEast: () => -60,
       getNorth: () => 55,
     }),
+    getStyle: () => ({ layers: [{ id: 'water' }, { id: 'labels' }] }),
+    moveLayer: vi.fn(),
   } as unknown as MapLibreMap;
 
   return { map, mapContainer, controlCorner };
@@ -266,6 +268,78 @@ describe('EnviroAtlasControl', () => {
     const map = control.getMap()!;
     const errorCall = (map.on as ReturnType<typeof vi.fn>).mock.calls.find(([type]) => type === 'error');
     expect(errorCall).toBeUndefined();
+    control.onRemove();
+  });
+
+  it('resizes the panel by dragging the handle in both anchor directions', () => {
+    const { control, panel } = mount({ collapsed: false, panelWidth: 360 });
+    const resizer = panel.querySelector('.enviroatlas-resizer') as HTMLElement;
+    vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue({ width: 360 } as DOMRect);
+
+    // Left-anchored panel (default): dragging right grows the panel
+    resizer.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 360 }));
+    document.dispatchEvent(new MouseEvent('pointermove', { clientX: 460 }));
+    document.dispatchEvent(new MouseEvent('pointerup', {}));
+    expect(control.getState().panelWidth).toBe(460);
+    expect(panel.style.getPropertyValue('--ea-panel-width')).toBe('460px');
+
+    // Right-anchored panel: dragging left grows the panel
+    panel.classList.add('enviroatlas-resize-left');
+    resizer.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 100 }));
+    document.dispatchEvent(new MouseEvent('pointermove', { clientX: 40 }));
+    document.dispatchEvent(new MouseEvent('pointerup', {}));
+    expect(control.getState().panelWidth).toBe(420);
+    control.onRemove();
+  });
+
+  it('clamps setPanelWidth to the minimum width', () => {
+    const { control } = mount({ collapsed: false });
+    control.setPanelWidth(50);
+    expect(control.getState().panelWidth).toBe(240);
+    control.onRemove();
+  });
+
+  it('populates the Insert before select and applies the choice', async () => {
+    const { control, panel } = mount({ collapsed: false });
+    const map = control.getMap()!;
+    const select = panel.querySelector('.enviroatlas-before-select') as HTMLSelectElement;
+
+    const values = [...select.options].map((o) => o.value);
+    expect(values).toEqual(['', 'water', 'labels']);
+
+    (map.getLayer as ReturnType<typeof vi.fn>).mockImplementation((id: string) =>
+      id === 'labels' ? { id: 'labels' } : undefined
+    );
+    select.value = 'labels';
+    select.dispatchEvent(new Event('change'));
+
+    await control.addServiceLayer(
+      { folder: 'Supplemental', name: 'PADUS', fullName: 'Supplemental/PADUS', type: 'MapServer' },
+      0,
+      'PADUS 2.0'
+    );
+    const addLayerCall = (map.addLayer as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(addLayerCall[1]).toBe('labels');
+    control.onRemove();
+  });
+
+  it('moves existing layers when the Insert before choice changes', async () => {
+    const { control, panel } = mount({ collapsed: false });
+    const map = control.getMap()!;
+    const layer = await control.addServiceLayer(
+      { folder: 'Supplemental', name: 'PADUS', fullName: 'Supplemental/PADUS', type: 'MapServer' },
+      0,
+      'PADUS 2.0'
+    );
+
+    (map.getLayer as ReturnType<typeof vi.fn>).mockImplementation((id: string) =>
+      id === 'labels' || id === layer!.layerId ? { id } : undefined
+    );
+    const select = panel.querySelector('.enviroatlas-before-select') as HTMLSelectElement;
+    select.value = 'labels';
+    select.dispatchEvent(new Event('change'));
+
+    expect(map.moveLayer).toHaveBeenCalledWith(layer!.layerId, 'labels');
     control.onRemove();
   });
 

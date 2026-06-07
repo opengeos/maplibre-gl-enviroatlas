@@ -103,5 +103,14 @@ export function EnviroAtlasControlReact({
     }
   }, [options.theme]);
 
+  // Update panel width when the prop changes
+  useEffect(() => {
+    if (controlRef.current && options.panelWidth !== undefined) {
+      if (controlRef.current.getState().panelWidth !== options.panelWidth) {
+        controlRef.current.setPanelWidth(options.panelWidth);
+      }
+    }
+  }, [options.panelWidth]);
+
   return null;
 }

@@ -10,6 +10,8 @@ A MapLibre GL JS plugin for searching and adding [EPA EnviroAtlas web services](
 - **Catalog Browsing** - Browse EnviroAtlas folders, services, and sublayers in a collapsible tree
 - **Deep Search** - Search both service names and individual sublayer names (e.g. "tree cover", "asthma")
 - **Layer Management** - Visibility toggle, opacity slider, legend display, and removal for each added layer
+- **Resizable Panel** - Drag the panel edge to resize it, in any control corner
+- **Layer Ordering** - An "Insert before" dropdown places added layers anywhere in the map layer stack (e.g. below labels)
 - **MapServer and ImageServer** - Adds dynamic ArcGIS services as MapLibre raster layers, reprojected to Web Mercator on the fly
 - **Fast Rendering** - One export request per map view by default (like ArcGIS dynamic layers), instead of dozens of per-tile renders
 - **Auto Zoom** - Zooms the map to each added layer's extent (disable with `fitBoundsOnAdd: false`)
@@ -105,7 +107,7 @@ Implements MapLibre's `IControl`. The control renders as a 29x29 toggle button t
 | `tileSize` | `number` | `256` | Raster tile size in pixels (tiles mode) |
 | `imageFormat` | `string` | `'png32'` | ArcGIS export image format |
 | `attribution` | `string` | `'U.S. EPA EnviroAtlas'` | Attribution for added raster sources |
-| `beforeId` | `string` | none | Existing map layer id to insert added layers before (e.g. a label layer); ignored when not found |
+| `beforeId` | `string` | none | Existing map layer id to insert added layers before (e.g. a label layer); ignored when not found. Also selectable from the "Insert before" dropdown in the panel |
 | `searchDebounceMs` | `number` | `250` | Debounce delay for the search input |
 | `fitBoundsOnAdd` | `boolean` | `true` | Zoom the map to a layer's extent when it is added |
 | `quietTileErrors` | `boolean` | `true` | Keep transient EnviroAtlas tile failures out of the console (surfaced via the `error` event instead) |
@@ -119,6 +121,7 @@ Implements MapLibre's `IControl`. The control renders as a 29x29 toggle button t
 | `setLayerOpacity(id, opacity)` | Sets the raster opacity of an added layer |
 | `setLayerVisibility(id, visible)` | Shows or hides an added layer |
 | `setTheme(theme)` | Switches the color theme |
+| `setPanelWidth(width)` | Sets the panel width in pixels (also adjustable by dragging the panel edge) |
 | `refreshCatalog()` | Clears caches and reloads the catalog tree |
 | `getState()` / `setState(partial)` | Reads or merges the control state |
 | `toggle()` / `expand()` / `collapse()` | Controls the panel visibility |

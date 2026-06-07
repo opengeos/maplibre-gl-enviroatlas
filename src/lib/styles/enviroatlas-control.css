@@ -205,6 +205,37 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ea-accent) 18%, transparent);
 }
 
+/* "Insert before" row */
+.enviroatlas-before-row {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.enviroatlas-before-label {
+  flex: 0 0 auto;
+  color: var(--ea-muted);
+  font-size: 11px;
+}
+
+.enviroatlas-before-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 4px 6px;
+  font-size: 11px;
+  color: var(--ea-fg);
+  background: var(--ea-input-bg);
+  border: 1px solid var(--ea-border);
+  border-radius: 4px;
+  outline: none;
+}
+
+.enviroatlas-before-select:focus {
+  border-color: var(--ea-accent);
+}
+
 /* Inline notice */
 .enviroatlas-notice {
   flex: 0 0 auto;
@@ -534,6 +565,33 @@
   height: 1px;
   background: var(--ea-border);
   margin: 12px 0;
+}
+
+/* Resize handle - sits on the panel's free edge (right by default,
+   left when the panel is right-anchored) */
+.enviroatlas-resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 6px;
+  cursor: ew-resize;
+  touch-action: none;
+  border-radius: 3px;
+}
+
+.enviroatlas-panel.enviroatlas-resize-left .enviroatlas-resizer {
+  right: auto;
+  left: 0;
+}
+
+.enviroatlas-resizer:hover,
+.enviroatlas-panel.enviroatlas-resizing .enviroatlas-resizer {
+  background: color-mix(in srgb, var(--ea-accent) 35%, transparent);
+}
+
+.enviroatlas-panel.enviroatlas-resizing {
+  user-select: none;
 }
 
 /* Small screens: tighten padding so more content fits */

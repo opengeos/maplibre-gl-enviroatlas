@@ -241,6 +241,22 @@ export class MapLayerManager {
   }
 
   /**
+   * Changes the layer that added layers are inserted before, moving
+   * the already-added layers accordingly.
+   *
+   * @param beforeId - The target layer id, or undefined for top of map
+   */
+  setBeforeId(beforeId?: string): void {
+    this._options.beforeId = beforeId;
+    const valid = beforeId && this._map.getLayer(beforeId) ? beforeId : undefined;
+    for (const entry of this._layers.values()) {
+      if (this._map.getLayer(entry.layerId)) {
+        this._map.moveLayer(entry.layerId, valid);
+      }
+    }
+  }
+
+  /**
    * Removes all managed layers and sources from the map.
    */
   removeAll(): void {
