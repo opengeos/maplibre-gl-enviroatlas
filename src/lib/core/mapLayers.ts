@@ -114,6 +114,63 @@ export class MapLayerManager {
       bounds,
     };
 
+    this._createSource(entry);
+    this._createLayer(entry);
+
+    this._layers.set(id, entry);
+    return entry;
+  }
+
+  /**
+   * Re-registers a previously persisted layer, reusing native source
+   * and layer objects the host application may have already recreated.
+   *
+   * Host applications that persist {@link AddedLayer} entries (for
+   * example in a saved project) often recreate the native MapLibre
+   * source and layer themselves before re-activating the control. This
+   * method hands those layers back to the manager without duplicating
+   * the natives: existing source/layer objects are kept and only the
+   * missing ones are created, while opacity and visibility are
+   * reconciled to match the entry.
+   *
+   * @param entry - The persisted added-layer entry to restore
+   * @returns The tracked added-layer entry (an existing one when the id
+   *   was already managed, otherwise the newly registered copy)
+   */
+  restoreLayer(entry: AddedLayer): AddedLayer {
+    const existing = this._layers.get(entry.id);
+    if (existing) return existing;
+
+    const copy: AddedLayer = { ...entry };
+
+    if (!this._map.getSource(copy.sourceId)) {
+      this._createSource(copy);
+    } else if (this._options.renderMode === 'image') {
+      // The host recreated the source; still ensure the shared view
+      // listener that refreshes image layers is registered.
+      this._ensureViewHandler();
+    }
+
+    if (!this._map.getLayer(copy.layerId)) {
+      this._createLayer(copy);
+    } else {
+      // The host recreated the native layer; reconcile paint and layout
+      // so manager state and the map agree.
+      this._map.setPaintProperty(copy.layerId, 'raster-opacity', copy.opacity);
+      this._map.setLayoutProperty(copy.layerId, 'visibility', copy.visible ? 'visible' : 'none');
+    }
+
+    this._layers.set(copy.id, copy);
+    return copy;
+  }
+
+  /**
+   * Creates the native MapLibre source for an added layer according to
+   * the current render mode.
+   *
+   * @param entry - The added layer to create a source for
+   */
+  private _createSource(entry: AddedLayer): void {
     if (this._options.renderMode === 'image') {
       const view = this._computeView(entry);
       this._map.addSource(entry.sourceId, {
@@ -129,8 +186,8 @@ export class MapLayerManager {
       this._ensureViewHandler();
     } else {
       const tileTemplate = buildTileTemplate(
-        service,
-        sublayerId,
+        entry.service,
+        entry.sublayerId,
         { tileSize: this._options.tileSize, imageFormat: this._options.imageFormat },
         this._options.servicesUrl
       );
@@ -142,10 +199,18 @@ export class MapLayerManager {
       };
       // Bounds keep MapLibre from requesting tiles far outside the data
       // extent, which the EnviroAtlas server answers with slow 504s.
-      if (bounds) source.bounds = bounds;
+      if (entry.bounds) source.bounds = entry.bounds;
       this._map.addSource(entry.sourceId, source);
     }
+  }
 
+  /**
+   * Creates the native MapLibre raster layer for an added layer,
+   * removing the source if layer creation fails.
+   *
+   * @param entry - The added layer to create a layer for
+   */
+  private _createLayer(entry: AddedLayer): void {
     // Insert below the configured layer when it exists on the map
     const beforeId =
       this._options.beforeId && this._map.getLayer(this._options.beforeId) ? this._options.beforeId : undefined;
@@ -156,12 +221,12 @@ export class MapLayerManager {
           type: 'raster',
           source: entry.sourceId,
           paint: {
-            'raster-opacity': opacity,
+            'raster-opacity': entry.opacity,
             // Image-mode sources swap the whole picture on view changes;
             // fading would flash the old extent during the swap.
             ...(this._options.renderMode === 'image' ? { 'raster-fade-duration': 0 } : {}),
           },
-          layout: { visibility: 'visible' },
+          layout: { visibility: entry.visible ? 'visible' : 'none' },
         },
         beforeId
       );
@@ -172,9 +237,6 @@ export class MapLayerManager {
       }
       throw error;
     }
-
-    this._layers.set(id, entry);
-    return entry;
   }
 
   /**

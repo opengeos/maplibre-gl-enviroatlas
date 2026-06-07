@@ -89,6 +89,8 @@ export class EnviroAtlasControl implements IControl {
   private _searchEpoch = 0;
   private _noticeTimer: ReturnType<typeof setTimeout> | null = null;
   private _debouncedSearch?: (query: string) => void;
+  /** Layers handed to restoreLayers before the control was added to a map */
+  private _pendingRestore: AddedLayer[] = [];
 
   // Panel positioning handlers
   private _resizeHandler: (() => void) | null = null;
@@ -155,6 +157,14 @@ export class EnviroAtlasControl implements IControl {
     // Setup event listeners for panel positioning and click-outside
     this._setupEventListeners();
 
+    // Apply any layers handed to restoreLayers before the control was
+    // added to a map.
+    if (this._pendingRestore.length > 0) {
+      const pending = this._pendingRestore;
+      this._pendingRestore = [];
+      this.restoreLayers(pending);
+    }
+
     // Set initial panel state
     if (!this._state.collapsed) {
       this._panel.classList.add('expanded');
@@ -207,6 +217,7 @@ export class EnviroAtlasControl implements IControl {
     this._allServices = [];
     this._prefetchStarted = false;
     this._state.addedLayers = [];
+    this._pendingRestore = [];
 
     // Remove panel from map container
     this._panel?.parentNode?.removeChild(this._panel);
@@ -369,6 +380,47 @@ export class EnviroAtlasControl implements IControl {
       this._handleError(error instanceof Error ? error : new Error(String(error)));
       return undefined;
     }
+  }
+
+  /**
+   * Re-registers layers that were previously added and persisted by a
+   * host application.
+   *
+   * Host applications that save and restore map state (for example a
+   * project file) typically recreate the native MapLibre source and
+   * layer for each persisted {@link AddedLayer} themselves and then need
+   * to hand those layers back to the control so it tracks them again.
+   * This method does exactly that without duplicating the natives: when
+   * the source/layer already exist they are reused (and opacity and
+   * visibility reconciled), otherwise they are created.
+   *
+   * Entries that are already tracked, or that match an existing layer by
+   * service and sublayer, are skipped. Unlike {@link addServiceLayer},
+   * this method never fits the map bounds and shows no notices.
+   *
+   * When the control has not been added to a map yet the entries are
+   * stored and applied automatically in {@link onAdd}.
+   *
+   * @param entries - The persisted added-layer entries to restore
+   */
+  restoreLayers(entries: AddedLayer[]): void {
+    if (!this._layerManager) {
+      this._pendingRestore.push(...entries);
+      return;
+    }
+
+    let restored = false;
+    for (const entry of entries) {
+      if (this._layerManager.findLayer(entry.service, entry.sublayerId)) continue;
+      const layer = this._layerManager.restoreLayer(entry);
+      restored = true;
+      this._emit('layeradd', { layer });
+    }
+
+    if (!restored) return;
+    this._state.addedLayers = this._layerManager.getLayers();
+    this._addedView?.update(this._state.addedLayers);
+    this._emit('statechange');
   }
 
   /**
