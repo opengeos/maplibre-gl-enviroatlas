@@ -39,7 +39,7 @@ function createControl(): EnviroAtlasControl {
   const nextControl = new EnviroAtlasControl({
     collapsed: pendingState?.collapsed ?? true,
     panelWidth: pendingState?.panelWidth ?? 360,
-    title: "EnviroAtlas",
+    title: "US EPA EnviroAtlas",
   });
 
   if (pendingState) {

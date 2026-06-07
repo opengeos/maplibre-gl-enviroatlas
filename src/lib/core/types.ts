@@ -28,7 +28,7 @@ export interface EnviroAtlasControlOptions {
 
   /**
    * Title displayed in the control header
-   * @default 'EnviroAtlas'
+   * @default 'US EPA EnviroAtlas'
    */
   title?: string;
 

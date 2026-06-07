@@ -93,7 +93,7 @@ Implements MapLibre's `IControl`. The control renders as a 29x29 toggle button t
 | --- | --- | --- | --- |
 | `collapsed` | `boolean` | `true` | Start with only the toggle button visible |
 | `position` | `'top-left' \| 'top-right' \| 'bottom-left' \| 'bottom-right'` | `'top-right'` | Control position on the map |
-| `title` | `string` | `'EnviroAtlas'` | Panel header title |
+| `title` | `string` | `'US EPA EnviroAtlas'` | Panel header title |
 | `panelWidth` | `number` | `360` | Panel width in pixels (capped to the viewport) |
 | `className` | `string` | `''` | Extra CSS class for the control container |
 | `theme` | `'light' \| 'dark' \| 'auto'` | `'auto'` | Color theme; `auto` follows `prefers-color-scheme` |

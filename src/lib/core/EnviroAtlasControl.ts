@@ -23,7 +23,7 @@ import type {
 const DEFAULT_OPTIONS: Required<EnviroAtlasControlOptions> = {
   collapsed: true,
   position: 'top-right',
-  title: 'EnviroAtlas',
+  title: 'US EPA EnviroAtlas',
   panelWidth: 360,
   className: '',
   theme: 'auto',
