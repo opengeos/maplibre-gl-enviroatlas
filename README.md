@@ -11,8 +11,9 @@ A MapLibre GL JS plugin for searching and adding [EPA EnviroAtlas web services](
 - **Deep Search** - Search both service names and individual sublayer names (e.g. "tree cover", "asthma")
 - **Layer Management** - Visibility toggle, opacity slider, legend display, and removal for each added layer
 - **MapServer and ImageServer** - Adds dynamic ArcGIS services as MapLibre raster layers, reprojected to Web Mercator on the fly
+- **Fast Rendering** - One export request per map view by default (like ArcGIS dynamic layers), instead of dozens of per-tile renders
 - **Auto Zoom** - Zooms the map to each added layer's extent (disable with `fitBoundsOnAdd: false`)
-- **Extent-aware Tiles** - Tile requests are limited to each service's data extent, avoiding slow out-of-extent server errors
+- **Extent-aware Requests** - Requests are clamped to each service's data extent, avoiding slow out-of-extent server errors
 - **Dark and Light Mode** - Follows the OS preference by default, with explicit `light`/`dark`/`auto` themes
 - **Small Screen Friendly** - The panel caps its size to the map and scrolls vertically
 - **TypeScript Support** - Full TypeScript support with exported type definitions
@@ -100,9 +101,11 @@ Implements MapLibre's `IControl`. The control renders as a 29x29 toggle button t
 | `servicesUrl` | `string` | EnviroAtlas REST root | ArcGIS REST services directory to browse |
 | `excludedFolders` | `string[]` | `['test_services', 'Utilities', 'monitor']` | Folders hidden from browsing and search |
 | `defaultOpacity` | `number` | `1` | Initial opacity for added layers (0 to 1) |
-| `tileSize` | `number` | `256` | Raster tile size in pixels |
+| `renderMode` | `'image' \| 'tiles'` | `'image'` | `'image'` renders one export per map view (fast for dynamic ArcGIS services); `'tiles'` requests one export per 256px tile |
+| `tileSize` | `number` | `256` | Raster tile size in pixels (tiles mode) |
 | `imageFormat` | `string` | `'png32'` | ArcGIS export image format |
 | `attribution` | `string` | `'U.S. EPA EnviroAtlas'` | Attribution for added raster sources |
+| `beforeId` | `string` | none | Existing map layer id to insert added layers before (e.g. a label layer); ignored when not found |
 | `searchDebounceMs` | `number` | `250` | Debounce delay for the search input |
 | `fitBoundsOnAdd` | `boolean` | `true` | Zoom the map to a layer's extent when it is added |
 | `quietTileErrors` | `boolean` | `true` | Keep transient EnviroAtlas tile failures out of the console (surfaced via the `error` event instead) |
@@ -243,6 +246,8 @@ src/
 ## Data Source
 
 This plugin reads the public EnviroAtlas ArcGIS REST services directory at `https://enviroatlas.epa.gov/arcgis/rest/services`. EnviroAtlas data are produced by the U.S. Environmental Protection Agency. See the [EnviroAtlas web services page](https://www.epa.gov/enviroatlas/enviroatlas-web-services) for documentation and terms.
+
+Note: in the default `renderMode: 'image'`, MapLibre image sources cannot carry attribution text. If you want the EPA credit in the map's attribution bar, add it through your `AttributionControl` (`customAttribution`) or use `renderMode: 'tiles'`, where the `attribution` option is attached to the raster source.
 
 ## License
 

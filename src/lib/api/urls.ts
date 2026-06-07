@@ -136,3 +136,39 @@ export function buildTileTemplate(
     ? buildExportImageUrl(service, options, servicesUrl)
     : buildExportUrl(service, sublayerId, options, servicesUrl);
 }
+
+/**
+ * Builds a single concrete export request for a specific view.
+ *
+ * Unlike {@link buildTileTemplate}, the bounding box and image size
+ * are fixed values: one request renders the whole visible area. This
+ * is much faster against dynamic ArcGIS services than per-tile
+ * exports, since every export is a server-side render job.
+ *
+ * @param service - The service reference
+ * @param sublayerId - Optional MapServer sublayer id (ignored for ImageServers)
+ * @param bbox3857 - View bounding box [xmin, ymin, xmax, ymax] in EPSG:3857 meters
+ * @param width - Image width in pixels
+ * @param height - Image height in pixels
+ * @param options - Image format options
+ * @param servicesUrl - The ArcGIS REST services root
+ * @returns The export image URL for the view
+ */
+export function buildViewExportUrl(
+  service: ServiceRef,
+  sublayerId: number | undefined,
+  bbox3857: [number, number, number, number],
+  width: number,
+  height: number,
+  options: ExportUrlOptions = {},
+  servicesUrl: string = DEFAULT_SERVICES_URL
+): string {
+  const { imageFormat = 'png32' } = options;
+  const operation = service.type === 'ImageServer' ? 'ImageServer/exportImage' : 'MapServer/export';
+  const base = `${trimTrailingSlash(servicesUrl)}/${service.fullName}/${operation}`;
+  const params =
+    `bbox=${bbox3857.join(',')}&bboxSR=3857&imageSR=3857` +
+    `&size=${Math.round(width)},${Math.round(height)}&format=${imageFormat}&transparent=true&f=image` +
+    (service.type === 'MapServer' && sublayerId !== undefined ? `&layers=show:${sublayerId}` : '');
+  return `${base}?${params}`;
+}

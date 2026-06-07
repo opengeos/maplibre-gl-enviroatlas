@@ -4,7 +4,7 @@ import './lib/styles/enviroatlas-control.css';
 // Main entry point - Core exports
 export { EnviroAtlasControl } from './lib/core/EnviroAtlasControl';
 export { MapLayerManager } from './lib/core/mapLayers';
-export type { MapLayerManagerOptions } from './lib/core/mapLayers';
+export type { MapLayerManagerOptions, RenderMode } from './lib/core/mapLayers';
 
 // Type exports
 export type {

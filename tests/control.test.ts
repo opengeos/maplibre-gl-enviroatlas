@@ -25,6 +25,12 @@ function createFakeMap(): { map: MapLibreMap; mapContainer: HTMLElement; control
     setPaintProperty: vi.fn(),
     setLayoutProperty: vi.fn(),
     fitBounds: vi.fn(),
+    getBounds: () => ({
+      getWest: () => -130,
+      getSouth: () => 20,
+      getEast: () => -60,
+      getNorth: () => 55,
+    }),
   } as unknown as MapLibreMap;
 
   return { map, mapContainer, controlCorner };
@@ -141,7 +147,7 @@ describe('EnviroAtlasControl', () => {
     control.onRemove();
   });
 
-  it('adds layers with extent bounds and zooms to them', async () => {
+  it('adds layers as a single view-sized export image and zooms to them', async () => {
     const { control } = mount({ collapsed: false });
     const map = control.getMap()!;
     const layer = await control.addServiceLayer(
@@ -152,8 +158,63 @@ describe('EnviroAtlasControl', () => {
 
     expect(layer?.bounds).toBeDefined();
     const sourceSpec = (map.addSource as ReturnType<typeof vi.fn>).mock.calls[0][1];
-    expect(sourceSpec.bounds).toEqual(layer?.bounds);
+    expect(sourceSpec.type).toBe('image');
+    expect(sourceSpec.url).toContain('/MapServer/export?bbox=');
+    expect(sourceSpec.url).toContain('layers=show:0');
+    expect(sourceSpec.url).not.toContain('{bbox-epsg-3857}');
     expect(map.fitBounds).toHaveBeenCalledWith(layer?.bounds, { padding: 40 });
+    // A shared view listener keeps the image in sync with the map
+    const moveendCall = (map.on as ReturnType<typeof vi.fn>).mock.calls.find(([type]) => type === 'moveend');
+    expect(moveendCall).toBeDefined();
+    control.onRemove();
+  });
+
+  it('inserts added layers before the configured beforeId when it exists', async () => {
+    const { control } = mount({ collapsed: false, beforeId: 'labels' });
+    const map = control.getMap()!;
+    (map.getLayer as ReturnType<typeof vi.fn>).mockImplementation((id: string) =>
+      id === 'labels' ? { id: 'labels' } : undefined
+    );
+
+    await control.addServiceLayer(
+      { folder: 'Supplemental', name: 'PADUS', fullName: 'Supplemental/PADUS', type: 'MapServer' },
+      0,
+      'PADUS 2.0'
+    );
+
+    const addLayerCall = (map.addLayer as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(addLayerCall[1]).toBe('labels');
+    control.onRemove();
+  });
+
+  it('ignores beforeId when the layer does not exist on the map', async () => {
+    const { control } = mount({ collapsed: false, beforeId: 'missing-layer' });
+    const map = control.getMap()!;
+
+    await control.addServiceLayer(
+      { folder: 'Supplemental', name: 'PADUS', fullName: 'Supplemental/PADUS', type: 'MapServer' },
+      0,
+      'PADUS 2.0'
+    );
+
+    const addLayerCall = (map.addLayer as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(addLayerCall[1]).toBeUndefined();
+    control.onRemove();
+  });
+
+  it('adds tiled raster sources with extent bounds in tiles mode', async () => {
+    const { control } = mount({ collapsed: false, renderMode: 'tiles' });
+    const map = control.getMap()!;
+    const layer = await control.addServiceLayer(
+      { folder: 'Supplemental', name: 'PADUS', fullName: 'Supplemental/PADUS', type: 'MapServer' },
+      0,
+      'PADUS 2.0'
+    );
+
+    const sourceSpec = (map.addSource as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(sourceSpec.type).toBe('raster');
+    expect(sourceSpec.tiles[0]).toContain('{bbox-epsg-3857}');
+    expect(sourceSpec.bounds).toEqual(layer?.bounds);
     control.onRemove();
   });
 

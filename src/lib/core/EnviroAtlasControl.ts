@@ -30,9 +30,11 @@ const DEFAULT_OPTIONS: Required<EnviroAtlasControlOptions> = {
   servicesUrl: DEFAULT_SERVICES_URL,
   excludedFolders: DEFAULT_EXCLUDED_FOLDERS,
   defaultOpacity: 1,
+  renderMode: 'image',
   tileSize: 256,
   imageFormat: 'png32',
   attribution: 'U.S. EPA EnviroAtlas',
+  beforeId: '',
   searchDebounceMs: 250,
   fitBoundsOnAdd: true,
   quietTileErrors: true,
@@ -130,6 +132,8 @@ export class EnviroAtlasControl implements IControl {
       tileSize: this._options.tileSize,
       imageFormat: this._options.imageFormat,
       attribution: this._options.attribution,
+      renderMode: this._options.renderMode,
+      beforeId: this._options.beforeId,
     });
     this._debouncedSearch = debounce(
       (...args: unknown[]) => this._runSearch(args[0] as string),

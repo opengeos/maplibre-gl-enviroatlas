@@ -44,3 +44,6 @@ map.on('load', () => {
 
   console.log('EnviroAtlas control added to map');
 });
+
+// Expose the map for debugging in the browser console
+Object.assign(window, { map });

@@ -68,7 +68,20 @@ export interface EnviroAtlasControlOptions {
   defaultOpacity?: number;
 
   /**
-   * Raster tile size in pixels
+   * How added layers are rendered.
+   *
+   * - `'image'` (default): one export request covers the visible map
+   *   area and refreshes when the view settles. Dynamic ArcGIS
+   *   services render each request server-side, so a single
+   *   viewport-sized request is much faster and more reliable than
+   *   dozens of tile requests.
+   * - `'tiles'`: a raster tile source requesting one export per tile.
+   * @default 'image'
+   */
+  renderMode?: 'image' | 'tiles';
+
+  /**
+   * Raster tile size in pixels (tiles render mode)
    * @default 256
    */
   tileSize?: number;
@@ -84,6 +97,13 @@ export interface EnviroAtlasControlOptions {
    * @default 'U.S. EPA EnviroAtlas'
    */
   attribution?: string;
+
+  /**
+   * Id of an existing map layer to insert added layers before
+   * (e.g. a label layer so EnviroAtlas rasters render below labels).
+   * When omitted or not found, layers are added on top.
+   */
+  beforeId?: string;
 
   /**
    * Debounce delay for the search input in milliseconds

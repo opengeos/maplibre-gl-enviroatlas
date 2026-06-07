@@ -143,6 +143,36 @@ function inverseProject(projection: Projection, x: number, y: number): [number, 
 }
 
 /**
+ * Projects a longitude/latitude to EPSG:3857 meters.
+ *
+ * @param lon - Longitude in degrees
+ * @param lat - Latitude in degrees (clamped to the Mercator range)
+ * @returns [x, y] in meters
+ */
+export function lngLatToMercator(lon: number, lat: number): [number, number] {
+  const clampedLat = Math.max(-MAX_MERCATOR_LAT, Math.min(MAX_MERCATOR_LAT, lat));
+  const x = R * lon * DEG;
+  const y = R * Math.log(Math.tan(Math.PI / 4 + (clampedLat * DEG) / 2));
+  return [x, y];
+}
+
+/**
+ * Intersects two geographic bounds.
+ *
+ * @param a - First bounds [west, south, east, north]
+ * @param b - Second bounds [west, south, east, north]
+ * @returns The intersection, or null when the bounds do not overlap
+ */
+export function intersectBounds(a: LngLatBoundsArray, b: LngLatBoundsArray): LngLatBoundsArray | null {
+  const west = Math.max(a[0], b[0]);
+  const south = Math.max(a[1], b[1]);
+  const east = Math.min(a[2], b[2]);
+  const north = Math.min(a[3], b[3]);
+  if (west >= east || south >= north) return null;
+  return [west, south, east, north];
+}
+
+/**
  * Converts an ArcGIS extent to padded geographic bounds.
  *
  * Edge midpoints are sampled in addition to corners because conic
