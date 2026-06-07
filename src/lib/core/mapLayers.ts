@@ -105,13 +105,21 @@ export class MapLayerManager {
     // extent, which the EnviroAtlas server answers with slow 504s.
     if (bounds) source.bounds = bounds;
     this._map.addSource(entry.sourceId, source);
-    this._map.addLayer({
-      id: entry.layerId,
-      type: 'raster',
-      source: entry.sourceId,
-      paint: { 'raster-opacity': opacity },
-      layout: { visibility: 'visible' },
-    });
+    try {
+      this._map.addLayer({
+        id: entry.layerId,
+        type: 'raster',
+        source: entry.sourceId,
+        paint: { 'raster-opacity': opacity },
+        layout: { visibility: 'visible' },
+      });
+    } catch (error) {
+      // Avoid orphaning the source when layer creation fails
+      if (this._map.getSource(entry.sourceId)) {
+        this._map.removeSource(entry.sourceId);
+      }
+      throw error;
+    }
 
     this._layers.set(id, entry);
     return entry;

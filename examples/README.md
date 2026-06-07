@@ -5,6 +5,7 @@ This directory contains example implementations of MapLibre GL EnviroAtlas.
 ## Available Examples
 
 ### Basic Example
+
 A vanilla TypeScript example showing how to add the EnviroAtlas control to a map, browse the catalog, search, and manage added layers.
 
 ```bash
@@ -14,6 +15,7 @@ npm run dev
 ```
 
 ### React Example
+
 A React example demonstrating the React wrapper component, the `useEnviroAtlas` hook, and theme switching.
 
 ```bash
