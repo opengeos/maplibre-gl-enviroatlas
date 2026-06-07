@@ -141,8 +141,21 @@ export function createTreeView(ctx: TreeViewContext): TreeView {
     const row = el('div', 'enviroatlas-row enviroatlas-folder-row');
     const caret = iconButton('enviroatlas-caret', `Expand ${folder}`, CHEVRON_SVG);
     const name = el('span', 'enviroatlas-row-name', folder);
-    row.append(caret, name);
+    const count = el('span', 'enviroatlas-count');
+    count.title = `Services in ${folder}`;
+    row.append(caret, name, count);
     wrapper.append(row);
+
+    // Service counts come from the same cached folder listings the
+    // expand action uses, so this costs one request per folder.
+    ctx.catalog
+      .listServices(folder)
+      .then((services) => {
+        count.textContent = String(services.length);
+      })
+      .catch(() => {
+        count.textContent = '';
+      });
 
     let servicesEl: HTMLElement | null = null;
     const toggleFolder = () => {

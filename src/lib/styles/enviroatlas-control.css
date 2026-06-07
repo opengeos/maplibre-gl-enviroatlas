@@ -291,6 +291,19 @@
   font-weight: 600;
 }
 
+.enviroatlas-count {
+  flex: 0 0 auto;
+  min-width: 18px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ea-muted);
+  background: var(--ea-hover);
+  border-radius: 8px;
+  padding: 0 5px;
+  line-height: 15px;
+}
+
 .enviroatlas-badge {
   flex: 0 0 auto;
   font-size: 9px;
