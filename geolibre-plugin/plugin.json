@@ -1,8 +1,8 @@
 {
-  "id": "geolibre-plugin-template",
-  "name": "GeoLibre Plugin Template",
+  "id": "maplibre-gl-enviroatlas",
+  "name": "MapLibre GL EnviroAtlas",
   "version": "0.1.0",
   "entry": "dist/index.js",
-  "description": "A starter GeoLibre plugin bundle with a MapLibre control.",
+  "description": "Search and add EPA EnviroAtlas web services to the map.",
   "style": "dist/style.css"
 }

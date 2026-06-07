@@ -1,14 +1,14 @@
 import maplibregl from 'maplibre-gl';
-import { PluginControl } from '../../src/index';
+import { EnviroAtlasControl } from '../../src/index';
 import '../../src/index.css';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-// Create map
+// Create map centered on the contiguous United States
 const map = new maplibregl.Map({
   container: 'map',
-  style: 'https://demotiles.maplibre.org/style.json',
-  center: [0, 0],
-  zoom: 2,
+  style: 'https://tiles.openfreemap.org/styles/positron',
+  center: [-96, 38.5],
+  zoom: 3.5,
 });
 
 // Add navigation controls to top-right
@@ -17,34 +17,33 @@ map.addControl(new maplibregl.NavigationControl(), 'top-right');
 // Add fullscreen control to top-right (after navigation)
 map.addControl(new maplibregl.FullscreenControl(), 'top-right');
 
-// Add plugin control when map loads
+// Add the EnviroAtlas control when the map loads
 map.on('load', () => {
-  // Create the plugin control with custom options
   // Set collapsed: true to start with just the 29x29 button (like navigation control)
-  const pluginControl = new PluginControl({
-    title: 'My Plugin',
+  const enviroAtlas = new EnviroAtlasControl({
     collapsed: false,
-    panelWidth: 300,
+    panelWidth: 360,
+    theme: 'auto', // follows the OS light/dark preference
   });
 
   // Add control to the map
-  map.addControl(pluginControl, 'top-right');
+  map.addControl(enviroAtlas, 'top-right');
 
-  // Add Globe control to the map
-  map.addControl(new maplibregl.GlobeControl(), 'top-right');
-
-  // Listen for state changes
-  pluginControl.on('statechange', (event) => {
-    console.log('Plugin state changed:', event.state);
+  // Listen for layer events
+  enviroAtlas.on('layeradd', (event) => {
+    console.log('Layer added:', event.layer?.label);
   });
 
-  pluginControl.on('collapse', () => {
-    console.log('Plugin panel collapsed');
+  enviroAtlas.on('layerremove', (event) => {
+    console.log('Layer removed:', event.layer?.label);
   });
 
-  pluginControl.on('expand', () => {
-    console.log('Plugin panel expanded');
+  enviroAtlas.on('error', (event) => {
+    console.warn('EnviroAtlas error:', event.error?.message);
   });
 
-  console.log('Plugin control added to map');
+  console.log('EnviroAtlas control added to map');
 });
+
+// Expose the map for debugging in the browser console
+Object.assign(window, { map });

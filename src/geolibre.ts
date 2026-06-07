@@ -1,6 +1,6 @@
-import { PluginControl } from "./lib/core/PluginControl";
-import type { PluginState } from "./lib/core/types";
-import "./lib/styles/plugin-control.css";
+import { EnviroAtlasControl } from "./lib/core/EnviroAtlasControl";
+import type { EnviroAtlasState } from "./lib/core/types";
+import "./lib/styles/enviroatlas-control.css";
 
 type GeoLibreMapControlPosition =
   | "top-left"
@@ -10,10 +10,10 @@ type GeoLibreMapControlPosition =
 
 interface GeoLibreAppAPI {
   addMapControl: (
-    control: PluginControl,
+    control: EnviroAtlasControl,
     position?: GeoLibreMapControlPosition,
   ) => boolean;
-  removeMapControl: (control: PluginControl) => void;
+  removeMapControl: (control: EnviroAtlasControl) => void;
 }
 
 interface GeoLibrePlugin {
@@ -31,15 +31,15 @@ interface GeoLibrePlugin {
   applyProjectState?: (app: GeoLibreAppAPI, state: unknown) => boolean | void;
 }
 
-let control: PluginControl | null = null;
+let control: EnviroAtlasControl | null = null;
 let position: GeoLibreMapControlPosition = "top-right";
-let pendingState: Partial<PluginState> | null = null;
+let pendingState: Partial<EnviroAtlasState> | null = null;
 
-function createControl(): PluginControl {
-  const nextControl = new PluginControl({
+function createControl(): EnviroAtlasControl {
+  const nextControl = new EnviroAtlasControl({
     collapsed: pendingState?.collapsed ?? true,
-    panelWidth: pendingState?.panelWidth ?? 300,
-    title: "GeoLibre Plugin Template",
+    panelWidth: pendingState?.panelWidth ?? 360,
+    title: "US EPA EnviroAtlas",
   });
 
   if (pendingState) {
@@ -49,7 +49,7 @@ function createControl(): PluginControl {
   return nextControl;
 }
 
-function isPluginState(value: unknown): value is Partial<PluginState> {
+function isPluginState(value: unknown): value is Partial<EnviroAtlasState> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return false;
   }
@@ -74,8 +74,8 @@ function isPluginState(value: unknown): value is Partial<PluginState> {
 }
 
 export const plugin: GeoLibrePlugin = {
-  id: "geolibre-plugin-template",
-  name: "GeoLibre Plugin Template",
+  id: "maplibre-gl-enviroatlas",
+  name: "MapLibre GL EnviroAtlas",
   version: "0.1.0",
   activate(app) {
     control = control ?? createControl();

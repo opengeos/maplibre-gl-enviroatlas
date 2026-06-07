@@ -38,3 +38,7 @@ dist-examples/
 .env.local
 .env.*.local
 .vite/
+
+# Tool artifacts
+.firecrawl/
+.playwright-cli/
